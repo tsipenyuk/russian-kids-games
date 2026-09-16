@@ -1,5 +1,20 @@
 export const ZONES = ['up', 'down', 'left', 'right', 'center'];
 
+// Extends the typing game's hand-curated keyboard-row enable order
+// (typing/script.js's russianLetters) to the full 33-letter alphabet:
+// dedupes its accidental repeat of н, inserts the letter it was missing (э)
+// near the other rare vowels, and forces ъ to the very last position.
+export const LETTER_ENABLE_ORDER = [
+  'а', 'о', 'в', 'л', 'д', 'ж', 'ы', 'ф',
+  'т', 'с', 'н', 'и', 'м', 'ь', 'б', 'я', 'ч', 'ю',
+  'е', 'р', 'к', 'у', 'п', 'г', 'ш', 'щ', 'з', 'х', 'ц', 'й',
+  'ё', 'э', 'ъ',
+];
+
+export function topNLetters(count) {
+  return LETTER_ENABLE_ORDER.slice(0, count);
+}
+
 export function buildSyllableSet(consonants, vowels) {
   const syllables = [];
   for (const consonant of consonants) {
