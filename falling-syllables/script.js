@@ -1,4 +1,4 @@
-import { buildSyllableSet, pickTarget, pickDistractors, buildRoundSlots, SLOT_COUNT } from './logic.js';
+import { buildSyllableSet, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, SLOT_COUNT } from './logic.js';
 
 const consonantInputs = [...document.querySelectorAll('[data-consonant]')];
 const vowelInputs = [...document.querySelectorAll('[data-vowel]')];
@@ -12,12 +12,32 @@ const MIN_DURATION_S = 1.5;
 const MAX_DURATION_S = 6;
 const DISTRACTOR_COUNT = SLOT_COUNT - 1;
 const FEEDBACK_DELAY_MS = 1000;
+const STATS_STORAGE_KEY = 'fallingSyllables.syllableStats';
 
 let running = false;
 let resolved = false;
 let correctSlotIndex = -1;
 let queue = [];
+let currentTarget = null;
 let advanceTimer = null;
+let stats = loadStats();
+
+function loadStats() {
+    try {
+        const raw = localStorage.getItem(STATS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function saveStats() {
+    try {
+        localStorage.setItem(STATS_STORAGE_KEY, JSON.stringify(stats));
+    } catch (e) {
+        // localStorage unavailable (e.g. private browsing quota) — stats just won't persist.
+    }
+}
 
 let audioContext = null;
 
@@ -99,7 +119,7 @@ function resetQueue() {
 
 function ensureQueue(enabled) {
     if (queue.length < 2) {
-        queue = [pickTarget(enabled), pickTarget(enabled)];
+        queue = [pickWeightedTarget(enabled, stats), pickWeightedTarget(enabled, stats)];
     }
 }
 
@@ -121,6 +141,7 @@ function startRound() {
     ensureQueue(enabled);
 
     const target = queue[0];
+    currentTarget = target;
     const distractors = pickDistractors(enabled, target, DISTRACTOR_COUNT);
     const built = buildRoundSlots(target, distractors);
     correctSlotIndex = built.correctSlotIndex;
@@ -144,8 +165,8 @@ function advanceQueue() {
     // queue[1] was picked from whatever set was enabled when it was queued as a
     // preview; the enabled set can change mid-round (checkbox edits are deferred
     // while a round is running), so re-validate it before promoting it to target.
-    const carried = enabled.includes(queue[1]) ? queue[1] : pickTarget(enabled);
-    queue = [carried, pickTarget(enabled)];
+    const carried = enabled.includes(queue[1]) ? queue[1] : pickWeightedTarget(enabled, stats);
+    queue = [carried, pickWeightedTarget(enabled, stats)];
 }
 
 function revealCorrectSlot() {
@@ -160,7 +181,11 @@ function resolveRound(clickedIndex) {
 
     fallingEl.classList.remove('falling');
 
-    if (clickedIndex !== null && clickedIndex === correctSlotIndex) {
+    const wasCorrect = clickedIndex !== null && clickedIndex === correctSlotIndex;
+    stats = recordAttempt(stats, currentTarget, wasCorrect);
+    saveStats();
+
+    if (wasCorrect) {
         playDing();
         slotEls[clickedIndex].classList.add('correct');
         fallingEl.classList.add('correct');

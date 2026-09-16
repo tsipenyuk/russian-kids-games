@@ -42,6 +42,45 @@ export function buildRoundSlots(target, distractors, { slotCount = SLOT_COUNT, r
   return { slots, correctSlotIndex: slots.indexOf(target) };
 }
 
+// A syllable that has never been wrong still needs some chance of
+// resurfacing, so weight is never allowed to bottom out at zero.
+const FLOOR_WEIGHT = 0.15;
+
+function statsFor(stats, syllable) {
+  return stats[syllable] ?? { attempts: 0, correct: 0 };
+}
+
+export function weightForSyllable(stats, syllable) {
+  const { attempts, correct } = statsFor(stats, syllable);
+  const errorRate = attempts > 0 ? (attempts - correct) / attempts : 1;
+  return FLOOR_WEIGHT + errorRate;
+}
+
+export function pickWeightedTarget(enabledSyllables, stats, rng = Math.random) {
+  if (enabledSyllables.length === 0) return null;
+
+  const weights = enabledSyllables.map((syllable) => weightForSyllable(stats, syllable));
+  const total = weights.reduce((sum, w) => sum + w, 0);
+
+  let threshold = rng() * total;
+  for (let i = 0; i < enabledSyllables.length; i++) {
+    threshold -= weights[i];
+    if (threshold < 0) return enabledSyllables[i];
+  }
+  return enabledSyllables[enabledSyllables.length - 1];
+}
+
+export function recordAttempt(stats, syllable, correct) {
+  const entry = statsFor(stats, syllable);
+  return {
+    ...stats,
+    [syllable]: {
+      attempts: entry.attempts + 1,
+      correct: entry.correct + (correct ? 1 : 0),
+    },
+  };
+}
+
 function shuffle(array, rng) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));

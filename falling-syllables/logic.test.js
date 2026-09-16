@@ -8,6 +8,9 @@ import {
   buildRoundSlots,
   LETTER_ENABLE_ORDER,
   topNLetters,
+  weightForSyllable,
+  pickWeightedTarget,
+  recordAttempt,
 } from './logic.js';
 
 const CONSONANTS = ['б', 'в', 'г', 'д', 'ж', 'з', 'й', 'к', 'л', 'м', 'н', 'п', 'р', 'с', 'т', 'ф', 'х', 'ц', 'ч', 'ш', 'щ'];
@@ -134,4 +137,78 @@ test('topNLetters never repeats a letter for any N from 3 to 33', () => {
     assert.equal(letters.length, n);
     assert.equal(new Set(letters).size, n);
   }
+});
+
+test('weightForSyllable gives a fully-wrong syllable more weight than a fully-correct one', () => {
+  const wrong = weightForSyllable({ 'па': { attempts: 10, correct: 0 } }, 'па');
+  const mastered = weightForSyllable({ 'па': { attempts: 10, correct: 10 } }, 'па');
+  assert.ok(wrong > mastered);
+});
+
+test('weightForSyllable never returns zero, even for a fully mastered syllable', () => {
+  assert.ok(weightForSyllable({ 'па': { attempts: 100, correct: 100 } }, 'па') > 0);
+});
+
+test('weightForSyllable treats an unseen syllable the same as a fully-wrong one', () => {
+  const unseen = weightForSyllable({}, 'па');
+  const fullyWrong = weightForSyllable({ 'па': { attempts: 5, correct: 0 } }, 'па');
+  assert.equal(unseen, fullyWrong);
+});
+
+test('pickWeightedTarget returns a member of the enabled syllables', () => {
+  const enabled = ['па', 'по', 'пу'];
+  const stats = { 'по': { attempts: 4, correct: 1 } };
+  for (let i = 0; i < 20; i++) {
+    assert.ok(enabled.includes(pickWeightedTarget(enabled, stats)));
+  }
+});
+
+test('pickWeightedTarget returns null when nothing is enabled', () => {
+  assert.equal(pickWeightedTarget([], {}), null);
+});
+
+test('pickWeightedTarget is deterministic given an injected rng', () => {
+  const enabled = ['па', 'по', 'пу'];
+  const stats = { 'по': { attempts: 4, correct: 1 } };
+  const a = pickWeightedTarget(enabled, stats, fakeRng([0.5]));
+  const b = pickWeightedTarget(enabled, stats, fakeRng([0.5]));
+  assert.equal(a, b);
+});
+
+test('pickWeightedTarget favors the higher-error syllable proportionally to its computed weight', () => {
+  const enabled = ['па', 'по'];
+  const stats = {
+    'па': { attempts: 10, correct: 0 },  // fully wrong
+    'по': { attempts: 10, correct: 10 }, // fully mastered
+  };
+  const wWrong = weightForSyllable(stats, 'па');
+  const wMastered = weightForSyllable(stats, 'по');
+  const total = wWrong + wMastered;
+
+  assert.equal(pickWeightedTarget(enabled, stats, fakeRng([(wWrong - 0.001) / total])), 'па');
+  assert.equal(pickWeightedTarget(enabled, stats, fakeRng([(wWrong + 0.001) / total])), 'по');
+});
+
+test('pickWeightedTarget still gives a fully mastered syllable a nonzero chance', () => {
+  const enabled = ['по'];
+  const stats = { 'по': { attempts: 50, correct: 50 } };
+  assert.equal(pickWeightedTarget(enabled, stats, fakeRng([0.999])), 'по');
+});
+
+test('recordAttempt starts a new syllable at one attempt', () => {
+  assert.deepEqual(recordAttempt({}, 'па', true), { 'па': { attempts: 1, correct: 1 } });
+  assert.deepEqual(recordAttempt({}, 'па', false), { 'па': { attempts: 1, correct: 0 } });
+});
+
+test('recordAttempt increments existing stats without mutating the input', () => {
+  const stats = { 'па': { attempts: 2, correct: 1 } };
+  const next = recordAttempt(stats, 'па', true);
+  assert.deepEqual(next, { 'па': { attempts: 3, correct: 2 } });
+  assert.deepEqual(stats, { 'па': { attempts: 2, correct: 1 } });
+});
+
+test('recordAttempt leaves other syllables\' stats untouched', () => {
+  const stats = { 'по': { attempts: 5, correct: 5 } };
+  const next = recordAttempt(stats, 'па', false);
+  assert.deepEqual(next, { 'по': { attempts: 5, correct: 5 }, 'па': { attempts: 1, correct: 0 } });
 });
