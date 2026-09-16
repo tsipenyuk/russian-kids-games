@@ -1,4 +1,4 @@
-export const ZONES = ['up', 'down', 'left', 'right', 'center'];
+export const SLOT_COUNT = 4;
 
 // Extends the typing game's hand-curated keyboard-row enable order
 // (typing/script.js's russianLetters) to the full 33-letter alphabet:
@@ -25,21 +25,21 @@ export function buildSyllableSet(consonants, vowels) {
   return syllables;
 }
 
-export function assignZones(enabledSyllables, { zones = ZONES, rng = Math.random } = {}) {
-  const picked = shuffle([...enabledSyllables], rng).slice(0, zones.length);
-  const shuffledZones = shuffle([...zones], rng);
-
-  const assignment = Object.fromEntries(zones.map((zone) => [zone, null]));
-  picked.forEach((syllable, i) => {
-    assignment[shuffledZones[i]] = syllable;
-  });
-  return assignment;
+export function pickTarget(enabledSyllables, rng = Math.random) {
+  if (enabledSyllables.length === 0) return null;
+  return enabledSyllables[Math.floor(rng() * enabledSyllables.length)];
 }
 
-export function pickFallingSyllable(zoneAssignment, rng = Math.random) {
-  const active = Object.values(zoneAssignment).filter((v) => v !== null);
-  if (active.length === 0) return null;
-  return active[Math.floor(rng() * active.length)];
+export function pickDistractors(enabledSyllables, target, count, rng = Math.random) {
+  const pool = enabledSyllables.filter((syllable) => syllable !== target);
+  return shuffle(pool, rng).slice(0, count);
+}
+
+export function buildRoundSlots(target, distractors, { slotCount = SLOT_COUNT, rng = Math.random } = {}) {
+  const filled = [target, ...distractors].slice(0, slotCount);
+  const padded = filled.concat(new Array(Math.max(0, slotCount - filled.length)).fill(null));
+  const slots = shuffle(padded, rng);
+  return { slots, correctSlotIndex: slots.indexOf(target) };
 }
 
 function shuffle(array, rng) {

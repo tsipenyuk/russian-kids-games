@@ -81,6 +81,21 @@ legend {
     overflow: hidden;
 }
 
+.next-preview {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    min-width: 2.5rem;
+    padding: 0.25rem 0.5rem;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.7);
+    border: 2px solid #d8b25c;
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #22313a;
+}
+
 .falling-syllable {
     position: absolute;
     left: 50%;
@@ -97,6 +112,11 @@ legend {
     animation-fill-mode: forwards;
 }
 
+.falling-syllable.correct {
+    animation: fallingVanish 0.6s ease forwards;
+    color: #38a169;
+}
+
 @keyframes fall {
     from {
         top: 0;
@@ -106,24 +126,26 @@ legend {
     }
 }
 
-.mat {
+@keyframes fallingVanish {
+    to {
+        opacity: 0;
+        transform: translate(-50%, 0) scale(1.3);
+    }
+}
+
+.slots {
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 30%;
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: 1fr 1fr 1fr;
-    grid-template-areas:
-        ".    up    ."
-        "left center right"
-        ".    down  .";
+    height: 22%;
+    display: flex;
     gap: 4px;
     padding: 4px;
 }
 
-.zone {
+.slot {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -132,14 +154,40 @@ legend {
     border-radius: 8px;
     font-size: 1.5rem;
     font-weight: bold;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
 }
 
-.zone[data-zone="up"] { grid-area: up; }
-.zone[data-zone="left"] { grid-area: left; }
-.zone[data-zone="center"] { grid-area: center; }
-.zone[data-zone="right"] { grid-area: right; }
-.zone[data-zone="down"] { grid-area: down; }
-
-.zone.empty {
+.slot.empty {
     visibility: hidden;
+}
+
+.slot.correct {
+    animation: slotCorrect 0.6s ease;
+    background: #c6f6d5;
+    border-color: #38a169;
+}
+
+.slot.wrong {
+    animation: slotWobble 0.5s ease;
+    background: #fed7d7;
+    border-color: #e53e3e;
+}
+
+.slot.reveal {
+    background: #c6f6d5;
+    border-color: #38a169;
+}
+
+@keyframes slotCorrect {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+    100% { transform: scale(1); }
+}
+
+@keyframes slotWobble {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-8px); }
+    75% { transform: translateX(8px); }
 }

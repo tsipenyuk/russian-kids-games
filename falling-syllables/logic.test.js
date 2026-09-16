@@ -1,10 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ZONES,
+  SLOT_COUNT,
   buildSyllableSet,
-  assignZones,
-  pickFallingSyllable,
+  pickTarget,
+  pickDistractors,
+  buildRoundSlots,
   LETTER_ENABLE_ORDER,
   topNLetters,
 } from './logic.js';
@@ -30,60 +31,71 @@ test('buildSyllableSet works with a single consonant or vowel', () => {
   assert.deepEqual(buildSyllableSet([], ['а']), []);
 });
 
-test('assignZones fills all 5 zones when at least 5 syllables are enabled', () => {
-  const enabled = ['па', 'по', 'пу', 'ма', 'мо', 'му', 'ба', 'бо', 'бу'];
-  const assignment = assignZones(enabled);
-
-  assert.deepEqual(Object.keys(assignment).sort(), [...ZONES].sort());
-  const values = Object.values(assignment);
-  assert.equal(values.filter((v) => v !== null).length, 5);
-  for (const v of values) {
-    assert.ok(enabled.includes(v));
+test('pickTarget returns a member of the enabled syllables', () => {
+  const enabled = ['па', 'по', 'пу'];
+  for (let i = 0; i < 20; i++) {
+    assert.ok(enabled.includes(pickTarget(enabled)));
   }
-  assert.equal(new Set(values).size, 5, 'no zone repeats a syllable');
 });
 
-test('assignZones hides zones it cannot fill when fewer than 5 syllables are enabled', () => {
+test('pickTarget returns null when nothing is enabled', () => {
+  assert.equal(pickTarget([]), null);
+});
+
+test('pickTarget is deterministic given an injected rng', () => {
   const enabled = ['па', 'по', 'пу'];
-  const assignment = assignZones(enabled);
-
-  const filled = Object.values(assignment).filter((v) => v !== null);
-  assert.equal(filled.length, 3);
-  assert.deepEqual(filled.sort(), [...enabled].sort());
-  const empty = Object.values(assignment).filter((v) => v === null);
-  assert.equal(empty.length, 2);
+  const a = pickTarget(enabled, fakeRng([0.5]));
+  const b = pickTarget(enabled, fakeRng([0.5]));
+  assert.equal(a, b);
 });
 
-test('assignZones leaves every zone empty when nothing is enabled', () => {
-  const assignment = assignZones([]);
-  assert.ok(Object.values(assignment).every((v) => v === null));
+test('pickDistractors excludes the target and returns distinct syllables', () => {
+  const enabled = ['па', 'по', 'пу', 'ма', 'мо'];
+  const distractors = pickDistractors(enabled, 'па', 3);
+
+  assert.equal(distractors.length, 3);
+  assert.ok(!distractors.includes('па'));
+  assert.equal(new Set(distractors).size, 3);
+  for (const d of distractors) {
+    assert.ok(enabled.includes(d));
+  }
 });
 
-test('assignZones is deterministic given an injected rng', () => {
-  const enabled = ['па', 'по', 'пу'];
-  const rng = fakeRng([0, 0, 0, 0, 0, 0]);
-  const a = assignZones(enabled, { rng: fakeRng([0, 0, 0, 0, 0, 0]) });
-  const b = assignZones(enabled, { rng: fakeRng([0, 0, 0, 0, 0, 0]) });
+test('pickDistractors returns fewer than requested when the pool is too small', () => {
+  const enabled = ['па', 'по'];
+  const distractors = pickDistractors(enabled, 'па', 3);
+  assert.deepEqual(distractors, ['по']);
+});
+
+test('pickDistractors is deterministic given an injected rng', () => {
+  const enabled = ['па', 'по', 'пу', 'ма'];
+  const a = pickDistractors(enabled, 'па', 2, fakeRng([0.1, 0.4, 0.7]));
+  const b = pickDistractors(enabled, 'па', 2, fakeRng([0.1, 0.4, 0.7]));
   assert.deepEqual(a, b);
 });
 
-test('pickFallingSyllable returns one of the currently assigned zone syllables', () => {
-  const assignment = { up: 'ма', down: null, left: 'па', right: null, center: 'бу' };
-  for (let i = 0; i < 20; i++) {
-    const picked = pickFallingSyllable(assignment);
-    assert.ok(['ма', 'па', 'бу'].includes(picked));
-  }
+test('buildRoundSlots fills all 4 slots when target plus 3 distractors are given', () => {
+  const { slots, correctSlotIndex } = buildRoundSlots('па', ['по', 'пу', 'ма']);
+
+  assert.equal(slots.length, SLOT_COUNT);
+  assert.deepEqual([...slots].sort(), ['ма', 'по', 'пу', 'па'].sort());
+  assert.equal(slots[correctSlotIndex], 'па');
 });
 
-test('pickFallingSyllable returns null when every zone is empty', () => {
-  const assignment = { up: null, down: null, left: null, right: null, center: null };
-  assert.equal(pickFallingSyllable(assignment), null);
+test('buildRoundSlots hides unused slots when fewer than 4 syllables are given', () => {
+  const { slots, correctSlotIndex } = buildRoundSlots('па', ['по']);
+
+  assert.equal(slots.length, SLOT_COUNT);
+  const filled = slots.filter((s) => s !== null);
+  assert.equal(filled.length, 2);
+  assert.equal(slots.filter((s) => s === null).length, 2);
+  assert.equal(slots[correctSlotIndex], 'па');
 });
 
-test('pickFallingSyllable is deterministic given an injected rng', () => {
-  const assignment = { up: 'ма', down: 'па', left: null, right: null, center: null };
-  const picked = pickFallingSyllable(assignment, fakeRng([0]));
-  assert.equal(picked, 'ма');
+test('buildRoundSlots is deterministic given an injected rng', () => {
+  const a = buildRoundSlots('па', ['по', 'пу', 'ма'], { rng: fakeRng([0.9, 0.1, 0.5, 0.2]) });
+  const b = buildRoundSlots('па', ['по', 'пу', 'ма'], { rng: fakeRng([0.9, 0.1, 0.5, 0.2]) });
+  assert.deepEqual(a, b);
 });
 
 test('LETTER_ENABLE_ORDER covers all 33 Cyrillic letters exactly once', () => {
