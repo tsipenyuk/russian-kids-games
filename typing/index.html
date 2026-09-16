@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Русская клавиатура для детей</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a class="home-link" href="../index.html">&larr; На главную</a>
+    <div class="game-container">
+        <div class="header">
+            <h1>🇷🇺 Учим русские буквы! 🇷🇺</h1>
+            <div class="controls">
+                <label for="letterCount">Количество букв: <span id="letterCountValue">5</span></label>
+                <input type="range" id="letterCount" min="1" max="33" value="5" class="letter-slider">
+                <div class="enabled-letters">
+                    <span>Изучаем: </span><span id="enabledLettersDisplay">А, О, В, Л, Д</span>
+                </div>
+            </div>
+            <div class="score">Счёт: <span id="score">0</span>/20 • Осталось: <span id="remaining">20</span></div>
+        </div>
+        
+        <div class="letter-display">
+            <div class="current-letter" id="currentLetter">А</div>
+            <div class="instruction">Нажми эту букву на клавиатуре!</div>
+        </div>
+        
+        <div class="animation-area" id="animationArea">
+            <div class="success-animation" id="successAnimation">
+                <div class="star">⭐</div>
+                <div class="star">⭐</div>
+                <div class="star">⭐</div>
+                <div class="message">Отлично!</div>
+            </div>
+            
+            <div class="error-animation" id="errorAnimation">
+                <div class="sad-face">😢</div>
+                <div class="message">Попробуй ещё раз!</div>
+            </div>
+        </div>
+        
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="keyboard-hint">
+            <p>Переключи клавиатуру на русский язык и нажми нужную букву!</p>
+        </div>
+    </div>
+    
+    <!-- Audio elements for sound effects -->
+    <audio id="successSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBT2a3Oy4fyIFKITQ8N6lYR0XdLvr46JQEhNQo+LuvW4gDDyP0+/GdSsMJH3K7+K8hzAUbr7o7KpaGgNgqOzts14fDTuQ0+v7fC0HJIzK7+S8hzAUar3o7K1bGwJ" type="audio/wav">
+    </audio>
+    <audio id="errorSound" preload="auto">
+        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAAC/hYqFbF1fdJivrJBhNjVgodDbq2EcBj+K2/LDciUFJJHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBT2a3Oy4fyIFKITQ8N6lYR0XdLvr46JQEhNQo+LuvW4gDDyP0+/GdSsMJH3K7+K8hzAUbr7o7KpaGgNgqOzts14fDTuQ0+v7fC0HJIzK7+S8hzAUar3o7K1bGwJ" type="audio/wav">
+    </audio>
+    
+    <script src="script.js"></script>
+</body>
+</html>

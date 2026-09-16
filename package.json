@@ -1,0 +1,11 @@
+{
+  "name": "russian-kids-games",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Simple browser games for learning Cyrillic letters and syllables, published on GitHub Pages",
+  "scripts": {
+    "test": "node --test"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,145 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(180deg, #cdeaff 0%, #f4fff0 100%);
+    color: #22313a;
+}
+
+.home-link {
+    align-self: flex-start;
+    color: #22313a;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.home-link:hover {
+    text-decoration: underline;
+}
+
+.game-container {
+    width: min(100%, 640px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+h1 {
+    margin: 0;
+    text-align: center;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+}
+
+fieldset {
+    border: none;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+legend {
+    font-weight: bold;
+}
+
+.speed-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.empty-warning {
+    color: #b23b3b;
+    font-weight: bold;
+}
+
+.stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    max-height: 70vh;
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.falling-syllable {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translate(-50%, 0);
+    font-size: 3rem;
+    font-weight: bold;
+    color: #22313a;
+}
+
+.falling-syllable.falling {
+    animation-name: fall;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+}
+
+@keyframes fall {
+    from {
+        top: 0;
+    }
+    to {
+        top: calc(100% - 30%);
+    }
+}
+
+.mat {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30%;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-areas:
+        ".    up    ."
+        "left center right"
+        ".    down  .";
+    gap: 4px;
+    padding: 4px;
+}
+
+.zone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffe9a8;
+    border: 3px solid #d8b25c;
+    border-radius: 8px;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.zone[data-zone="up"] { grid-area: up; }
+.zone[data-zone="left"] { grid-area: left; }
+.zone[data-zone="center"] { grid-area: center; }
+.zone[data-zone="right"] { grid-area: right; }
+.zone[data-zone="down"] { grid-area: down; }
+
+.zone.empty {
+    visibility: hidden;
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Прыгающие слоги</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <a class="home-link" href="../index.html">&larr; На главную</a>
+
+    <div class="game-container">
+        <h1>Прыгающие слоги</h1>
+
+        <div class="controls">
+            <fieldset>
+                <legend>Согласные</legend>
+                <label><input type="checkbox" data-consonant="п" checked> п</label>
+                <label><input type="checkbox" data-consonant="б" checked> б</label>
+                <label><input type="checkbox" data-consonant="м" checked> м</label>
+            </fieldset>
+            <fieldset>
+                <legend>Гласные</legend>
+                <label><input type="checkbox" data-vowel="а" checked> а</label>
+                <label><input type="checkbox" data-vowel="е" checked> е</label>
+                <label><input type="checkbox" data-vowel="и" checked> и</label>
+                <label><input type="checkbox" data-vowel="о" checked> о</label>
+                <label><input type="checkbox" data-vowel="у" checked> у</label>
+            </fieldset>
+            <label class="speed-control">
+                Скорость падения:
+                <input type="range" id="speed" min="1" max="10" value="4">
+            </label>
+        </div>
+
+        <p class="empty-warning" id="emptyWarning" hidden>
+            Выберите хотя бы одну согласную и одну гласную букву.
+        </p>
+
+        <div class="stage" id="stage">
+            <div class="falling-syllable" id="fallingSyllable"></div>
+            <div class="mat">
+                <div class="zone" data-zone="up"><span></span></div>
+                <div class="zone" data-zone="left"><span></span></div>
+                <div class="zone" data-zone="center"><span></span></div>
+                <div class="zone" data-zone="right"><span></span></div>
+                <div class="zone" data-zone="down"><span></span></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
