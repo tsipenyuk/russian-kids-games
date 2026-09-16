@@ -1,8 +1,6 @@
-import { buildSyllableSet, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, advanceBatch, nextLetterToEnable, splitLettersByType, reconcileEnabledLetters, pickRussianVoice, SLOT_COUNT } from './logic.js';
+import { buildEnabledSyllables, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, advanceBatch, nextLetterToEnable, reconcileEnabledLetters, pickRussianVoice, topNLetters, SLOT_COUNT } from './logic.js';
 
-const consonantInputs = [...document.querySelectorAll('[data-consonant]')];
-const vowelInputs = [...document.querySelectorAll('[data-vowel]')];
-const letterCheckboxes = [...consonantInputs, ...vowelInputs];
+const letterCheckboxes = [...document.querySelectorAll('[data-letter]')];
 const speedInput = document.getElementById('speed');
 const emptyWarning = document.getElementById('emptyWarning');
 const fallingEl = document.getElementById('fallingSyllable');
@@ -10,6 +8,12 @@ const previewEl = document.getElementById('nextPreview');
 const slotEls = [...document.querySelectorAll('.slot')];
 const starEl = document.getElementById('star');
 const levelNumberEl = document.getElementById('levelNumber');
+const openLettersBtn = document.getElementById('openLettersBtn');
+const closeLettersBtn = document.getElementById('closeLettersBtn');
+const lettersModal = document.getElementById('lettersModal');
+const letterCountBadge = document.getElementById('letterCountBadge');
+const letterCountInput = document.getElementById('letterCount');
+const letterCountValueEl = document.getElementById('letterCountValue');
 
 const MIN_DURATION_S = 1.5;
 const MAX_DURATION_S = 6;
@@ -32,13 +36,11 @@ let batch = loadBatch();
 let enabledLetters = loadEnabledLetters();
 
 if (enabledLetters === null) {
-    // First run: seed persisted state from whatever the checkboxes start out checked with.
-    enabledLetters = letterCheckboxes.filter((el) => el.checked).map(letterOf);
+    // First run: seed persisted state to the letter-count slider's own default.
+    enabledLetters = topNLetters(Number(letterCountInput.value));
     saveEnabledLetters();
-} else {
-    // Later runs: persisted state is authoritative, including for the checkbox-backed letters.
-    applyEnabledLettersToCheckboxes();
 }
+applyEnabledLettersToCheckboxes();
 
 function loadStats() {
     try {
@@ -108,9 +110,8 @@ function saveEnabledLetters() {
     }
 }
 
-// A checkbox's letter is whichever of the two data attributes it carries.
 function letterOf(el) {
-    return el.dataset.consonant ?? el.dataset.vowel;
+    return el.dataset.letter;
 }
 
 function applyEnabledLettersToCheckboxes() {
@@ -119,11 +120,39 @@ function applyEnabledLettersToCheckboxes() {
     }
 }
 
+function renderLetterCount() {
+    letterCountBadge.textContent = String(enabledLetters.length);
+}
+
+function renderLetterCountValue() {
+    letterCountValueEl.textContent = letterCountInput.value;
+}
+
+// Single point of mutation for the enabled letter set, so every source
+// (checkbox toggles, the slider's bulk-set, leveling up) stays consistent.
+function setEnabledLetters(next) {
+    enabledLetters = next;
+    saveEnabledLetters();
+    applyEnabledLettersToCheckboxes();
+    renderLetterCount();
+}
+
 function syncEnabledLettersFromCheckboxes() {
     const checkboxLetters = letterCheckboxes.map(letterOf);
     const checkedLetters = letterCheckboxes.filter((el) => el.checked).map(letterOf);
-    enabledLetters = reconcileEnabledLetters(enabledLetters, checkboxLetters, checkedLetters);
-    saveEnabledLetters();
+    setEnabledLetters(reconcileEnabledLetters(enabledLetters, checkboxLetters, checkedLetters));
+}
+
+// Restart the current round immediately if idle, so a letter-set change is
+// reflected right away instead of waiting out a round already in flight.
+function restartIfIdle() {
+    if (running) return;
+    if (advanceTimer) {
+        clearTimeout(advanceTimer);
+        advanceTimer = null;
+    }
+    resetQueue();
+    startRound();
 }
 
 let audioContext = null;
@@ -178,8 +207,7 @@ function speak(text) {
 }
 
 function enabledSyllables() {
-    const { consonants, vowels } = splitLettersByType(enabledLetters);
-    return buildSyllableSet(consonants, vowels);
+    return buildEnabledSyllables(enabledLetters);
 }
 
 function fallDurationSeconds() {
@@ -287,9 +315,7 @@ function resolveRound(clickedIndex) {
         // No letter left to enable once all 33 are already on — Level stays
         // tied to enabled-letter-count, so there's nothing to level up to.
         if (letter) {
-            enabledLetters = [...enabledLetters, letter];
-            saveEnabledLetters();
-            applyEnabledLettersToCheckboxes();
+            setEnabledLetters([...enabledLetters, letter]);
             level += 1;
             saveLevel();
             renderLevel();
@@ -333,16 +359,26 @@ slotEls.forEach((slotEl, index) => {
 for (const el of letterCheckboxes) {
     el.addEventListener('change', () => {
         syncEnabledLettersFromCheckboxes();
-        if (!running) {
-            if (advanceTimer) {
-                clearTimeout(advanceTimer);
-                advanceTimer = null;
-            }
-            resetQueue();
-            startRound();
-        }
+        restartIfIdle();
     });
 }
+
+openLettersBtn.addEventListener('click', () => {
+    lettersModal.showModal();
+});
+
+closeLettersBtn.addEventListener('click', () => {
+    lettersModal.close();
+});
+
+letterCountInput.addEventListener('input', renderLetterCountValue);
+
+// Only the slider's release (not every drag tick) bulk-sets the toggle
+// list; it stays a one-shot action, not a live sync with the toggles.
+letterCountInput.addEventListener('change', () => {
+    setEnabledLetters(topNLetters(Number(letterCountInput.value)));
+    restartIfIdle();
+});
 
 starEl.addEventListener('click', () => {
     starEl.classList.remove('pop');
@@ -355,5 +391,7 @@ starEl.addEventListener('animationend', () => {
     starEl.classList.remove('pop');
 });
 
+renderLetterCountValue();
+renderLetterCount();
 renderLevel();
 startRound();

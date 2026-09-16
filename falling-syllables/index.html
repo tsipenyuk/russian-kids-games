@@ -13,20 +13,9 @@
         <h1>Прыгающие слоги</h1>
 
         <div class="controls">
-            <fieldset>
-                <legend>Согласные</legend>
-                <label><input type="checkbox" data-consonant="п" checked> п</label>
-                <label><input type="checkbox" data-consonant="б" checked> б</label>
-                <label><input type="checkbox" data-consonant="м" checked> м</label>
-            </fieldset>
-            <fieldset>
-                <legend>Гласные</legend>
-                <label><input type="checkbox" data-vowel="а" checked> а</label>
-                <label><input type="checkbox" data-vowel="е" checked> е</label>
-                <label><input type="checkbox" data-vowel="и" checked> и</label>
-                <label><input type="checkbox" data-vowel="о" checked> о</label>
-                <label><input type="checkbox" data-vowel="у" checked> у</label>
-            </fieldset>
+            <button type="button" class="open-letters-btn" id="openLettersBtn">
+                Буквы: <span id="letterCountBadge"></span>
+            </button>
             <label class="speed-control">
                 Скорость падения:
                 <input type="range" id="speed" min="1" max="10" value="4">
@@ -34,8 +23,65 @@
         </div>
 
         <p class="empty-warning" id="emptyWarning" hidden>
-            Выберите хотя бы одну согласную и одну гласную букву.
+            Выберите хотя бы одну согласную и одну гласную или знак.
         </p>
+
+        <dialog class="letters-modal" id="lettersModal">
+            <div class="modal-header">
+                <h2>Буквы</h2>
+                <button type="button" class="modal-close" id="closeLettersBtn" aria-label="Закрыть">&times;</button>
+            </div>
+
+            <label class="letter-count-control">
+                Количество букв: <span id="letterCountValue">8</span>
+                <input type="range" id="letterCount" min="3" max="33" value="8">
+            </label>
+
+            <div class="letter-toggle-groups">
+                <fieldset>
+                    <legend>Согласные</legend>
+                    <label><input type="checkbox" data-letter="б"> б</label>
+                    <label><input type="checkbox" data-letter="в"> в</label>
+                    <label><input type="checkbox" data-letter="г"> г</label>
+                    <label><input type="checkbox" data-letter="д"> д</label>
+                    <label><input type="checkbox" data-letter="ж"> ж</label>
+                    <label><input type="checkbox" data-letter="з"> з</label>
+                    <label><input type="checkbox" data-letter="й"> й</label>
+                    <label><input type="checkbox" data-letter="к"> к</label>
+                    <label><input type="checkbox" data-letter="л"> л</label>
+                    <label><input type="checkbox" data-letter="м"> м</label>
+                    <label><input type="checkbox" data-letter="н"> н</label>
+                    <label><input type="checkbox" data-letter="п"> п</label>
+                    <label><input type="checkbox" data-letter="р"> р</label>
+                    <label><input type="checkbox" data-letter="с"> с</label>
+                    <label><input type="checkbox" data-letter="т"> т</label>
+                    <label><input type="checkbox" data-letter="ф"> ф</label>
+                    <label><input type="checkbox" data-letter="х"> х</label>
+                    <label><input type="checkbox" data-letter="ц"> ц</label>
+                    <label><input type="checkbox" data-letter="ч"> ч</label>
+                    <label><input type="checkbox" data-letter="ш"> ш</label>
+                    <label><input type="checkbox" data-letter="щ"> щ</label>
+                </fieldset>
+                <fieldset>
+                    <legend>Гласные</legend>
+                    <label><input type="checkbox" data-letter="а"> а</label>
+                    <label><input type="checkbox" data-letter="е"> е</label>
+                    <label><input type="checkbox" data-letter="ё"> ё</label>
+                    <label><input type="checkbox" data-letter="и"> и</label>
+                    <label><input type="checkbox" data-letter="о"> о</label>
+                    <label><input type="checkbox" data-letter="у"> у</label>
+                    <label><input type="checkbox" data-letter="ы"> ы</label>
+                    <label><input type="checkbox" data-letter="э"> э</label>
+                    <label><input type="checkbox" data-letter="ю"> ю</label>
+                    <label><input type="checkbox" data-letter="я"> я</label>
+                </fieldset>
+                <fieldset>
+                    <legend>Знаки</legend>
+                    <label><input type="checkbox" data-letter="ъ"> ъ</label>
+                    <label><input type="checkbox" data-letter="ь"> ь</label>
+                </fieldset>
+            </div>
+        </dialog>
 
         <div class="stage" id="stage">
             <div class="level-badge" title="Уровень">

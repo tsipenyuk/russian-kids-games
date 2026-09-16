@@ -29,11 +29,14 @@ export function splitLettersByType(letters) {
   return {
     consonants: letters.filter((letter) => CONSONANTS.includes(letter)),
     vowels: letters.filter((letter) => VOWELS.includes(letter)),
+    signs: letters.filter((letter) => SIGNS.includes(letter)),
   };
 }
 
-// Checkbox-backed letters (the toggle list pre-#7) exactly mirror checked state;
-// letters enabled via leveling have no checkbox yet and are left untouched.
+// Every letter has a checkbox as of #7's full 33-letter toggle list, so this
+// reduces to "match checked state" in practice; the checkboxLetters param and
+// its untouched-if-absent branch stay in case some future set of enabled
+// letters isn't fully checkbox-backed again.
 export function reconcileEnabledLetters(enabledLetters, checkboxLetters, checkedLetters) {
   const kept = enabledLetters.filter((letter) => !checkboxLetters.includes(letter) || checkedLetters.includes(letter));
   const added = checkedLetters.filter((letter) => !kept.includes(letter));
@@ -49,6 +52,12 @@ export function advanceBatch(batch, correct) {
     return { batch: next, leveledUp: false };
   }
   return { batch: { correct: 0, total: 0 }, leveledUp: next.correct >= LEVEL_UP_THRESHOLD };
+}
+
+// A syllable is a consonant plus either a vowel or a sign (ъ/ь).
+export function buildEnabledSyllables(enabledLetters) {
+  const { consonants, vowels, signs } = splitLettersByType(enabledLetters);
+  return buildSyllableSet(consonants, [...vowels, ...signs]);
 }
 
 export function buildSyllableSet(consonants, vowels) {

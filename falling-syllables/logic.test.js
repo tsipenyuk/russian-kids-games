@@ -20,6 +20,7 @@ import {
   splitLettersByType,
   reconcileEnabledLetters,
   pickRussianVoice,
+  buildEnabledSyllables,
 } from './logic.js';
 
 function fakeRng(values) {
@@ -252,17 +253,24 @@ test('nextLetterToEnable accepts a custom order', () => {
   assert.equal(nextLetterToEnable(['x'], ['x', 'y', 'z']), 'y');
 });
 
-test('splitLettersByType separates consonants from vowels and drops signs', () => {
+test('splitLettersByType separates consonants, vowels, and signs', () => {
   assert.deepEqual(
     splitLettersByType(['п', 'а', 'в', 'о', 'ь']),
-    { consonants: ['п', 'в'], vowels: ['а', 'о'] }
+    { consonants: ['п', 'в'], vowels: ['а', 'о'], signs: ['ь'] }
   );
 });
 
 test('splitLettersByType preserves input order within each group', () => {
   assert.deepEqual(
     splitLettersByType(['о', 'в', 'а', 'п']),
-    { consonants: ['в', 'п'], vowels: ['о', 'а'] }
+    { consonants: ['в', 'п'], vowels: ['о', 'а'], signs: [] }
+  );
+});
+
+test('splitLettersByType classifies both signs independently', () => {
+  assert.deepEqual(
+    splitLettersByType(['ъ', 'п', 'ь']),
+    { consonants: ['п'], vowels: [], signs: ['ъ', 'ь'] }
   );
 });
 
@@ -292,6 +300,21 @@ test('pickRussianVoice returns null when no Russian voice is available', () => {
 
 test('pickRussianVoice returns null for an empty voice list', () => {
   assert.equal(pickRussianVoice([]), null);
+});
+
+test('buildEnabledSyllables combines consonants with vowels and signs', () => {
+  assert.deepEqual(
+    buildEnabledSyllables(['п', 'а', 'ъ']),
+    ['па', 'пъ']
+  );
+});
+
+test('buildEnabledSyllables is empty when no consonant is enabled', () => {
+  assert.deepEqual(buildEnabledSyllables(['а', 'ъ']), []);
+});
+
+test('buildEnabledSyllables is empty when neither a vowel nor a sign is enabled', () => {
+  assert.deepEqual(buildEnabledSyllables(['п']), []);
 });
 
 test('pickRussianVoice matches a ru lang code regardless of case', () => {
