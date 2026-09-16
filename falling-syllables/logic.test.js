@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   SLOT_COUNT,
   buildSyllableSet,
-  pickTarget,
   pickDistractors,
   buildRoundSlots,
   LETTER_ENABLE_ORDER,
@@ -32,24 +31,6 @@ test('buildSyllableSet combines each consonant with each vowel, consonant-major 
 test('buildSyllableSet works with a single consonant or vowel', () => {
   assert.deepEqual(buildSyllableSet(['п'], ['а', 'о']), ['па', 'по']);
   assert.deepEqual(buildSyllableSet([], ['а']), []);
-});
-
-test('pickTarget returns a member of the enabled syllables', () => {
-  const enabled = ['па', 'по', 'пу'];
-  for (let i = 0; i < 20; i++) {
-    assert.ok(enabled.includes(pickTarget(enabled)));
-  }
-});
-
-test('pickTarget returns null when nothing is enabled', () => {
-  assert.equal(pickTarget([]), null);
-});
-
-test('pickTarget is deterministic given an injected rng', () => {
-  const enabled = ['па', 'по', 'пу'];
-  const a = pickTarget(enabled, fakeRng([0.5]));
-  const b = pickTarget(enabled, fakeRng([0.5]));
-  assert.equal(a, b);
 });
 
 test('pickDistractors excludes the target and returns distinct syllables', () => {

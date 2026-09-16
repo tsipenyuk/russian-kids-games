@@ -25,11 +25,6 @@ export function buildSyllableSet(consonants, vowels) {
   return syllables;
 }
 
-export function pickTarget(enabledSyllables, rng = Math.random) {
-  if (enabledSyllables.length === 0) return null;
-  return enabledSyllables[Math.floor(rng() * enabledSyllables.length)];
-}
-
 export function pickDistractors(enabledSyllables, target, count, rng = Math.random) {
   const pool = enabledSyllables.filter((syllable) => syllable !== target);
   return shuffle(pool, rng).slice(0, count);
