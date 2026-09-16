@@ -1,4 +1,4 @@
-import { buildSyllableSet, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, advanceBatch, nextLetterToEnable, splitLettersByType, reconcileEnabledLetters, SLOT_COUNT } from './logic.js';
+import { buildSyllableSet, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, advanceBatch, nextLetterToEnable, splitLettersByType, reconcileEnabledLetters, pickRussianVoice, SLOT_COUNT } from './logic.js';
 
 const consonantInputs = [...document.querySelectorAll('[data-consonant]')];
 const vowelInputs = [...document.querySelectorAll('[data-vowel]')];
@@ -167,6 +167,16 @@ function playBong() {
     playTone(180, 'sawtooth', 0.4);
 }
 
+function speak(text) {
+    if (typeof speechSynthesis === 'undefined') return;
+    const voice = pickRussianVoice(speechSynthesis.getVoices());
+    if (!voice) return;
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.voice = voice;
+    speechSynthesis.speak(utterance);
+}
+
 function enabledSyllables() {
     const { consonants, vowels } = splitLettersByType(enabledLetters);
     return buildSyllableSet(consonants, vowels);
@@ -309,8 +319,13 @@ fallingEl.addEventListener('animationend', () => {
     resolveRound(null);
 });
 
+fallingEl.addEventListener('click', () => {
+    speak(fallingEl.textContent);
+});
+
 slotEls.forEach((slotEl, index) => {
     slotEl.addEventListener('click', () => {
+        speak(slotEl.querySelector('span').textContent);
         resolveRound(index);
     });
 });

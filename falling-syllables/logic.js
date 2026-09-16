@@ -112,6 +112,12 @@ export function recordAttempt(stats, syllable, correct) {
   };
 }
 
+// speechSynthesis.getVoices() lists every installed voice regardless of
+// language; TTS stays silent when none of them is Russian.
+export function pickRussianVoice(voices) {
+  return voices.find((voice) => voice.lang.toLowerCase().startsWith('ru')) ?? null;
+}
+
 function shuffle(array, rng) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));

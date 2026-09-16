@@ -19,6 +19,7 @@ import {
   nextLetterToEnable,
   splitLettersByType,
   reconcileEnabledLetters,
+  pickRussianVoice,
 } from './logic.js';
 
 function fakeRng(values) {
@@ -278,4 +279,22 @@ test('reconcileEnabledLetters adds a newly-checked letter', () => {
 test('reconcileEnabledLetters leaves letters with no checkbox untouched (e.g. leveled-up letters)', () => {
   const result = reconcileEnabledLetters(['п', 'б', 'в'], ['п', 'б'], ['п']);
   assert.deepEqual(result, ['п', 'в']);
+});
+
+test('pickRussianVoice returns the first voice with a ru-prefixed lang code', () => {
+  const voices = [{ lang: 'en-US' }, { lang: 'ru-RU' }, { lang: 'de-DE' }];
+  assert.deepEqual(pickRussianVoice(voices), { lang: 'ru-RU' });
+});
+
+test('pickRussianVoice returns null when no Russian voice is available', () => {
+  assert.equal(pickRussianVoice([{ lang: 'en-US' }, { lang: 'de-DE' }]), null);
+});
+
+test('pickRussianVoice returns null for an empty voice list', () => {
+  assert.equal(pickRussianVoice([]), null);
+});
+
+test('pickRussianVoice matches a ru lang code regardless of case', () => {
+  const voices = [{ lang: 'en-US' }, { lang: 'RU-RU' }];
+  assert.deepEqual(pickRussianVoice(voices), { lang: 'RU-RU' });
 });

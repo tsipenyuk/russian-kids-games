@@ -145,6 +145,7 @@ legend {
     font-size: 3rem;
     font-weight: bold;
     color: #22313a;
+    cursor: pointer;
 }
 
 .falling-syllable.falling {
