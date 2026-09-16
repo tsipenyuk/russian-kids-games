@@ -1,18 +1,24 @@
-import { buildSyllableSet, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, SLOT_COUNT } from './logic.js';
+import { buildSyllableSet, pickWeightedTarget, pickDistractors, buildRoundSlots, recordAttempt, advanceBatch, nextLetterToEnable, splitLettersByType, reconcileEnabledLetters, SLOT_COUNT } from './logic.js';
 
 const consonantInputs = [...document.querySelectorAll('[data-consonant]')];
 const vowelInputs = [...document.querySelectorAll('[data-vowel]')];
+const letterCheckboxes = [...consonantInputs, ...vowelInputs];
 const speedInput = document.getElementById('speed');
 const emptyWarning = document.getElementById('emptyWarning');
 const fallingEl = document.getElementById('fallingSyllable');
 const previewEl = document.getElementById('nextPreview');
 const slotEls = [...document.querySelectorAll('.slot')];
+const starEl = document.getElementById('star');
+const levelNumberEl = document.getElementById('levelNumber');
 
 const MIN_DURATION_S = 1.5;
 const MAX_DURATION_S = 6;
 const DISTRACTOR_COUNT = SLOT_COUNT - 1;
 const FEEDBACK_DELAY_MS = 1000;
 const STATS_STORAGE_KEY = 'fallingSyllables.syllableStats';
+const LEVEL_STORAGE_KEY = 'fallingSyllables.level';
+const BATCH_STORAGE_KEY = 'fallingSyllables.batch';
+const ENABLED_LETTERS_STORAGE_KEY = 'fallingSyllables.enabledLetters';
 
 let running = false;
 let resolved = false;
@@ -21,6 +27,18 @@ let queue = [];
 let currentTarget = null;
 let advanceTimer = null;
 let stats = loadStats();
+let level = loadLevel();
+let batch = loadBatch();
+let enabledLetters = loadEnabledLetters();
+
+if (enabledLetters === null) {
+    // First run: seed persisted state from whatever the checkboxes start out checked with.
+    enabledLetters = letterCheckboxes.filter((el) => el.checked).map(letterOf);
+    saveEnabledLetters();
+} else {
+    // Later runs: persisted state is authoritative, including for the checkbox-backed letters.
+    applyEnabledLettersToCheckboxes();
+}
 
 function loadStats() {
     try {
@@ -37,6 +55,75 @@ function saveStats() {
     } catch (e) {
         // localStorage unavailable (e.g. private browsing quota) — stats just won't persist.
     }
+}
+
+function loadLevel() {
+    try {
+        const raw = localStorage.getItem(LEVEL_STORAGE_KEY);
+        return raw ? Number(raw) : 1;
+    } catch (e) {
+        return 1;
+    }
+}
+
+function saveLevel() {
+    try {
+        localStorage.setItem(LEVEL_STORAGE_KEY, String(level));
+    } catch (e) {
+        // localStorage unavailable — level just won't persist.
+    }
+}
+
+function loadBatch() {
+    try {
+        const raw = localStorage.getItem(BATCH_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : { correct: 0, total: 0 };
+    } catch (e) {
+        return { correct: 0, total: 0 };
+    }
+}
+
+function saveBatch() {
+    try {
+        localStorage.setItem(BATCH_STORAGE_KEY, JSON.stringify(batch));
+    } catch (e) {
+        // localStorage unavailable — batch progress just won't persist.
+    }
+}
+
+function loadEnabledLetters() {
+    try {
+        const raw = localStorage.getItem(ENABLED_LETTERS_STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function saveEnabledLetters() {
+    try {
+        localStorage.setItem(ENABLED_LETTERS_STORAGE_KEY, JSON.stringify(enabledLetters));
+    } catch (e) {
+        // localStorage unavailable — the enabled letter set just won't persist.
+    }
+}
+
+// A checkbox's letter is whichever of the two data attributes it carries.
+function letterOf(el) {
+    return el.dataset.consonant ?? el.dataset.vowel;
+}
+
+function applyEnabledLettersToCheckboxes() {
+    for (const el of letterCheckboxes) {
+        el.checked = enabledLetters.includes(letterOf(el));
+    }
+}
+
+function syncEnabledLettersFromCheckboxes() {
+    const checkboxLetters = letterCheckboxes.map(letterOf);
+    const checkedLetters = letterCheckboxes.filter((el) => el.checked).map(letterOf);
+    enabledLetters = reconcileEnabledLetters(enabledLetters, checkboxLetters, checkedLetters);
+    saveEnabledLetters();
 }
 
 let audioContext = null;
@@ -80,16 +167,9 @@ function playBong() {
     playTone(180, 'sawtooth', 0.4);
 }
 
-function enabledConsonants() {
-    return consonantInputs.filter((el) => el.checked).map((el) => el.dataset.consonant);
-}
-
-function enabledVowels() {
-    return vowelInputs.filter((el) => el.checked).map((el) => el.dataset.vowel);
-}
-
 function enabledSyllables() {
-    return buildSyllableSet(enabledConsonants(), enabledVowels());
+    const { consonants, vowels } = splitLettersByType(enabledLetters);
+    return buildSyllableSet(consonants, vowels);
 }
 
 function fallDurationSeconds() {
@@ -111,6 +191,10 @@ function renderSlots(slots) {
 
 function renderPreview() {
     previewEl.textContent = queue[1] ?? '';
+}
+
+function renderLevel() {
+    levelNumberEl.textContent = String(level);
 }
 
 function resetQueue() {
@@ -185,6 +269,23 @@ function resolveRound(clickedIndex) {
     stats = recordAttempt(stats, currentTarget, wasCorrect);
     saveStats();
 
+    const { batch: nextBatch, leveledUp } = advanceBatch(batch, wasCorrect);
+    batch = nextBatch;
+    saveBatch();
+    if (leveledUp) {
+        const letter = nextLetterToEnable(enabledLetters);
+        // No letter left to enable once all 33 are already on — Level stays
+        // tied to enabled-letter-count, so there's nothing to level up to.
+        if (letter) {
+            enabledLetters = [...enabledLetters, letter];
+            saveEnabledLetters();
+            applyEnabledLettersToCheckboxes();
+            level += 1;
+            saveLevel();
+            renderLevel();
+        }
+    }
+
     if (wasCorrect) {
         playDing();
         slotEls[clickedIndex].classList.add('correct');
@@ -214,8 +315,9 @@ slotEls.forEach((slotEl, index) => {
     });
 });
 
-for (const el of [...consonantInputs, ...vowelInputs]) {
+for (const el of letterCheckboxes) {
     el.addEventListener('change', () => {
+        syncEnabledLettersFromCheckboxes();
         if (!running) {
             if (advanceTimer) {
                 clearTimeout(advanceTimer);
@@ -227,4 +329,16 @@ for (const el of [...consonantInputs, ...vowelInputs]) {
     });
 }
 
+starEl.addEventListener('click', () => {
+    starEl.classList.remove('pop');
+    // Force reflow so the animation restarts even on a rapid repeat click.
+    void starEl.offsetWidth;
+    starEl.classList.add('pop');
+});
+
+starEl.addEventListener('animationend', () => {
+    starEl.classList.remove('pop');
+});
+
+renderLevel();
 startRound();

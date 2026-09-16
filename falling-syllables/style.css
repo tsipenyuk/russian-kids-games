@@ -96,6 +96,47 @@ legend {
     color: #22313a;
 }
 
+.level-badge {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.7);
+    border: 2px solid #d8b25c;
+    border-radius: 8px;
+    z-index: 1;
+}
+
+.star {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    color: #d8b25c;
+    cursor: pointer;
+}
+
+.star.pop {
+    animation: starPop 0.5s ease;
+}
+
+.level-number {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #22313a;
+}
+
+@keyframes starPop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.5) rotate(-10deg); }
+    70% { transform: scale(0.9) rotate(8deg); }
+    100% { transform: scale(1) rotate(0); }
+}
+
 .falling-syllable {
     position: absolute;
     left: 50%;

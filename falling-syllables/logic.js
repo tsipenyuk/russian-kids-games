@@ -15,6 +15,42 @@ export function topNLetters(count) {
   return LETTER_ENABLE_ORDER.slice(0, count);
 }
 
+export const CONSONANTS = ['б', 'в', 'г', 'д', 'ж', 'з', 'й', 'к', 'л', 'м', 'н', 'п', 'р', 'с', 'т', 'ф', 'х', 'ц', 'ч', 'ш', 'щ'];
+export const VOWELS = ['а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я'];
+export const SIGNS = ['ъ', 'ь'];
+
+// A Level is defined purely by enabled-letter-count: this is the highest-priority
+// letter not yet enabled, so leveling up always grows the set by exactly one.
+export function nextLetterToEnable(enabledLetters, order = LETTER_ENABLE_ORDER) {
+  return order.find((letter) => !enabledLetters.includes(letter)) ?? null;
+}
+
+export function splitLettersByType(letters) {
+  return {
+    consonants: letters.filter((letter) => CONSONANTS.includes(letter)),
+    vowels: letters.filter((letter) => VOWELS.includes(letter)),
+  };
+}
+
+// Checkbox-backed letters (the toggle list pre-#7) exactly mirror checked state;
+// letters enabled via leveling have no checkbox yet and are left untouched.
+export function reconcileEnabledLetters(enabledLetters, checkboxLetters, checkedLetters) {
+  const kept = enabledLetters.filter((letter) => !checkboxLetters.includes(letter) || checkedLetters.includes(letter));
+  const added = checkedLetters.filter((letter) => !kept.includes(letter));
+  return [...kept, ...added];
+}
+
+export const BATCH_SIZE = 15;
+export const LEVEL_UP_THRESHOLD = 13;
+
+export function advanceBatch(batch, correct) {
+  const next = { correct: batch.correct + (correct ? 1 : 0), total: batch.total + 1 };
+  if (next.total < BATCH_SIZE) {
+    return { batch: next, leveledUp: false };
+  }
+  return { batch: { correct: 0, total: 0 }, leveledUp: next.correct >= LEVEL_UP_THRESHOLD };
+}
+
 export function buildSyllableSet(consonants, vowels) {
   const syllables = [];
   for (const consonant of consonants) {

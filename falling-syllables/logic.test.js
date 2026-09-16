@@ -10,11 +10,16 @@ import {
   weightForSyllable,
   pickWeightedTarget,
   recordAttempt,
+  CONSONANTS,
+  VOWELS,
+  SIGNS,
+  BATCH_SIZE,
+  LEVEL_UP_THRESHOLD,
+  advanceBatch,
+  nextLetterToEnable,
+  splitLettersByType,
+  reconcileEnabledLetters,
 } from './logic.js';
-
-const CONSONANTS = ['б', 'в', 'г', 'д', 'ж', 'з', 'й', 'к', 'л', 'м', 'н', 'п', 'р', 'с', 'т', 'ф', 'х', 'ц', 'ч', 'ш', 'щ'];
-const VOWELS = ['а', 'е', 'ё', 'и', 'о', 'у', 'ы', 'э', 'ю', 'я'];
-const SIGNS = ['ъ', 'ь'];
 
 function fakeRng(values) {
   let i = 0;
@@ -192,4 +197,85 @@ test('recordAttempt leaves other syllables\' stats untouched', () => {
   const stats = { 'по': { attempts: 5, correct: 5 } };
   const next = recordAttempt(stats, 'па', false);
   assert.deepEqual(next, { 'по': { attempts: 5, correct: 5 }, 'па': { attempts: 1, correct: 0 } });
+});
+
+test('advanceBatch increments total and correct without completing the batch', () => {
+  const { batch, leveledUp } = advanceBatch({ correct: 3, total: 5 }, true);
+  assert.deepEqual(batch, { correct: 4, total: 6 });
+  assert.equal(leveledUp, false);
+});
+
+test('advanceBatch increments only total on a wrong round', () => {
+  const { batch, leveledUp } = advanceBatch({ correct: 3, total: 5 }, false);
+  assert.deepEqual(batch, { correct: 3, total: 6 });
+  assert.equal(leveledUp, false);
+});
+
+test('advanceBatch resets to 0/BATCH_SIZE once the batch completes, regardless of outcome', () => {
+  const passing = advanceBatch({ correct: 12, total: BATCH_SIZE - 1 }, true);
+  assert.deepEqual(passing.batch, { correct: 0, total: 0 });
+
+  const failing = advanceBatch({ correct: 5, total: BATCH_SIZE - 1 }, false);
+  assert.deepEqual(failing.batch, { correct: 0, total: 0 });
+});
+
+test('advanceBatch levels up at exactly the LEVEL_UP_THRESHOLD', () => {
+  const atThreshold = advanceBatch({ correct: LEVEL_UP_THRESHOLD - 1, total: BATCH_SIZE - 1 }, true);
+  assert.equal(atThreshold.leveledUp, true);
+
+  const belowThreshold = advanceBatch({ correct: LEVEL_UP_THRESHOLD - 1, total: BATCH_SIZE - 1 }, false);
+  assert.equal(belowThreshold.leveledUp, false);
+});
+
+test('advanceBatch does not mutate the input batch', () => {
+  const batch = { correct: 3, total: 5 };
+  advanceBatch(batch, true);
+  assert.deepEqual(batch, { correct: 3, total: 5 });
+});
+
+test('nextLetterToEnable returns the highest-priority letter not already enabled', () => {
+  const enabled = ['а', 'о']; // first two of LETTER_ENABLE_ORDER
+  assert.equal(nextLetterToEnable(enabled), 'в');
+});
+
+test('nextLetterToEnable ignores enabled-set ordering and hand-customization', () => {
+  const enabled = ['ъ', 'ф', 'а']; // out-of-order, includes the lowest-priority letter
+  assert.equal(nextLetterToEnable(enabled), 'о');
+});
+
+test('nextLetterToEnable returns null once every letter is enabled', () => {
+  assert.equal(nextLetterToEnable(LETTER_ENABLE_ORDER), null);
+});
+
+test('nextLetterToEnable accepts a custom order', () => {
+  assert.equal(nextLetterToEnable(['x'], ['x', 'y', 'z']), 'y');
+});
+
+test('splitLettersByType separates consonants from vowels and drops signs', () => {
+  assert.deepEqual(
+    splitLettersByType(['п', 'а', 'в', 'о', 'ь']),
+    { consonants: ['п', 'в'], vowels: ['а', 'о'] }
+  );
+});
+
+test('splitLettersByType preserves input order within each group', () => {
+  assert.deepEqual(
+    splitLettersByType(['о', 'в', 'а', 'п']),
+    { consonants: ['в', 'п'], vowels: ['о', 'а'] }
+  );
+});
+
+test('reconcileEnabledLetters drops a checkbox-backed letter once it is unchecked', () => {
+  const result = reconcileEnabledLetters(['п', 'б', 'м'], ['п', 'б', 'м'], ['п', 'б']);
+  assert.deepEqual(result, ['п', 'б']);
+});
+
+test('reconcileEnabledLetters adds a newly-checked letter', () => {
+  const result = reconcileEnabledLetters(['п'], ['п', 'б'], ['п', 'б']);
+  assert.deepEqual(result, ['п', 'б']);
+});
+
+test('reconcileEnabledLetters leaves letters with no checkbox untouched (e.g. leveled-up letters)', () => {
+  const result = reconcileEnabledLetters(['п', 'б', 'в'], ['п', 'б'], ['п']);
+  assert.deepEqual(result, ['п', 'в']);
 });
