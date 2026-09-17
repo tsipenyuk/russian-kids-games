@@ -9,8 +9,9 @@ static site on GitHub Pages.
 - **[Учим буквы](typing/index.html)** — a Cyrillic letter shows on screen,
   the kid presses the matching key on a keyboard set to Russian.
 - **[Прыгающие слоги](falling-syllables/index.html)** — a Russian syllable
-  falls down the screen; the kid reads it and jumps onto the matching zone
-  drawn on the floor (up/down/left/right/center, dance-mat style).
+  falls down the screen, and the kid clicks the matching answer among 4
+  buttons. The game reads syllables aloud on click, tracks accuracy per
+  syllable, and unlocks more letters as the kid improves.
 
 ## Running locally
 
@@ -19,26 +20,15 @@ with any static file server, e.g. `npx serve`.
 
 ## Tests
 
-The falling-syllables game's round logic (which syllables are in play, and
-how they're assigned to zones) is covered by unit tests using Node's built-in
-test runner:
+Unit tests cover the falling-syllables game's round logic: which syllables
+are in play, and how the game picks the target syllable and the wrong-answer
+choices. The tests use Node's built-in test runner:
 
 ```
 npm test
 ```
 
-## Glossary (falling-syllables game)
+## Glossary
 
-- **Zone** — one of the 5 positions (up, down, left, right, center) a
-  syllable can be assigned to, mirrored both on screen and as physical
-  markings on the floor. Arranged in a dance-mat-style plus shape.
-- **Round** — one cycle of the game: a syllable appears at the top, falls for
-  a fixed duration, and the game auto-advances to the next round when it
-  reaches the bottom.
-- **Enabled syllable set** — the syllables currently available for play,
-  built from the consonants and vowels a parent has checked in the picker
-  (default: п/б/м × а/е/и/о/у, 15 syllables).
-- **Zone assignment** — the mapping, re-rolled at the start of every round,
-  of up to 5 syllables from the enabled set onto the 5 zones. If fewer than 5
-  syllables are enabled, the remaining zones are hidden for that round rather
-  than repeating a label.
+See [`CONTEXT.md`](CONTEXT.md) for the domain glossary and the retired
+terms from the falling-syllables v1 design.
